@@ -1,0 +1,26 @@
+[project]
+name = "servicenow-mcp"
+version = "0.1.0"
+description = "MCP server that connects Claude (or any MCP client) to a ServiceNow instance"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=2.0",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "respx>=0.21"]
+
+[project.scripts]
+servicenow-mcp = "servicenow_mcp.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/servicenow_mcp"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
