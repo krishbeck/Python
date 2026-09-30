@@ -13,6 +13,10 @@ work with a ServiceNow instance through the REST Table API.
 | `update_incident` | Update any fields; `state` accepts names like `in_progress` |
 | `add_incident_comment` | Add a customer-visible comment or an internal work note |
 | `resolve_incident` | Resolve with a close code and notes |
+| `create_story` | Create an Agile user story (acceptance criteria, points, epic, sprint, ...) |
+| `get_story` | Full details of a story by number (`STRY0010001`) |
+| `list_stories` | List stories (filter by epic, sprint, assignee, text) |
+| `update_story` | Update story fields; `state` accepts names like `ready`, epic/sprint accept numbers |
 | `query_table` | Encoded-query search on any table (`change_request`, `sys_user`, `cmdb_ci`, ...) |
 | `get_record` | Fetch any record by table + `sys_id` |
 
@@ -47,7 +51,12 @@ claude mcp add servicenow \
   -- /path/to/servicenow_mcp/.venv/bin/servicenow-mcp
 ```
 
-Then ask Claude things like *"show me open P1 incidents"* or *"add a work note to INC0010001 saying the patch is deployed"*.
+Then ask Claude things like *"show me open P1 incidents"*, *"add a work note to INC0010001 saying the patch is deployed"*,
+or *"create a 3-point story in EPIC0001001 for password reset, with acceptance criteria"*.
+
+> Story tools use the `rm_story` table, which needs the **Agile Development** plugin
+> (`com.snc.sdlc.agile.2.0`) active on your instance. The integration user also needs a role that can write
+> stories, such as `scrum_user` or `scrum_admin`.
 
 ## Connect it to Claude Desktop
 

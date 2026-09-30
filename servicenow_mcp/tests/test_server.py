@@ -51,6 +51,10 @@ def test_tools_registered():
         "update_incident",
         "add_incident_comment",
         "resolve_incident",
+        "create_story",
+        "get_story",
+        "list_stories",
+        "update_story",
     }
 
 
@@ -105,6 +109,63 @@ def test_http_error_is_reported(mock_sn):
 
 def test_invalid_table_rejected(mock_sn):
     assert "Invalid table name" in call_error("query_table", table="../../api/other")
+
+
+def test_create_story_resolves_epic_and_sprint(mock_sn):
+    epic_id, sprint_id = "e" * 32, "5" * 32
+    mock_sn.get("/table/rm_epic", params={"sysparm_query": "number=EPIC0001001"}).respond(
+        json={"result": [{"sys_id": epic_id}]}
+    )
+    mock_sn.get("/table/rm_sprint", params={"sysparm_query": "number=SPNT0001001"}).respond(
+        json={"result": [{"sys_id": sprint_id}]}
+    )
+    post = mock_sn.post("/table/rm_story").respond(json={"result": {"number": "STRY0010001"}})
+
+    record = call(
+        "create_story",
+        short_description="As a user, I want to reset my password",
+        acceptance_criteria="Reset email arrives within 1 minute",
+        story_points=3,
+        epic="epic0001001",
+        sprint="SPNT0001001",
+        state="ready",
+    )
+    assert record["number"] == "STRY0010001"
+    assert json.loads(post.calls.last.request.content) == {
+        "short_description": "As a user, I want to reset my password",
+        "acceptance_criteria": "Reset email arrives within 1 minute",
+        "story_points": 3,
+        "state": 1,
+        "epic": epic_id,
+        "sprint": sprint_id,
+    }
+
+
+def test_create_story_defaults_to_draft(mock_sn):
+    post = mock_sn.post("/table/rm_story").respond(json={"result": {"number": "STRY0010002"}})
+    call("create_story", short_description="Minimal story")
+    assert json.loads(post.calls.last.request.content) == {"short_description": "Minimal story", "state": -6}
+
+
+def test_create_story_unknown_epic(mock_sn):
+    mock_sn.get("/table/rm_epic").respond(json={"result": []})
+    assert "No rm_epic record found" in call_error("create_story", short_description="x", epic="EPIC404")
+
+
+def test_list_stories_builds_query(mock_sn):
+    route = mock_sn.get("/table/rm_story").respond(json={"result": []})
+    call("list_stories", sprint="spnt0001001")
+    assert (
+        route.calls.last.request.url.params["sysparm_query"]
+        == "active=true^sprint.number=SPNT0001001^ORDERBYDESCsys_created_on"
+    )
+
+
+def test_update_story(mock_sn):
+    mock_sn.get("/table/rm_story").respond(json={"result": [{"sys_id": SYS_ID}]})
+    patch = mock_sn.patch(f"/table/rm_story/{SYS_ID}").respond(json={"result": {}})
+    call("update_story", number="STRY0010001", fields={"story_points": 5, "state": "work_in_progress"})
+    assert json.loads(patch.calls.last.request.content) == {"story_points": 5, "state": 2}
 
 
 def test_config_from_env(monkeypatch):
